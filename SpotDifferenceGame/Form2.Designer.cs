@@ -52,6 +52,16 @@ namespace SpotTheDifference
             UpdateAttemptsDisplay();
             UpdateTimerDisplay();
             UpdateFoundDifferencesDisplay();
+
+            // Ensure picture boxes are initially disabled
+            pictureBox1.Enabled = false;
+            pictureBox2.Enabled = false;
+        }
+
+        private void ClearPictureBoxes()
+        {
+            pictureBox1.Image = image1; // Reset to original image
+            pictureBox2.Image = image2;
         }
 
         private void btnLoadImages_Click(object sender, EventArgs e)
@@ -187,6 +197,10 @@ namespace SpotTheDifference
 
         private void btnStartGame_Click(object sender, EventArgs e)
         {
+
+            ClearPictureBoxes();
+
+
             // Reset game state
             foundDifferences.Clear();
             attemptsLeft = maxAttempts;
@@ -208,6 +222,10 @@ namespace SpotTheDifference
             pictureBox2.Enabled = true;
 
             btnStartGame.Enabled = false;
+
+            // Clear any previous drawings
+            pictureBox1.Invalidate();
+            pictureBox2.Invalidate();
         }
 
         private void pictureBox1_MouseClick(object sender, MouseEventArgs e)
@@ -222,7 +240,7 @@ namespace SpotTheDifference
 
         private void HandleClick(Point clickPoint, PictureBox pictureBox)
         {
-            if (differences.Count == 0 || !btnStartGame.Enabled) return;
+            if (differences.Count == 0) return;
 
             // Check if click is near any difference
             foreach (var diff in differences)
@@ -308,6 +326,9 @@ namespace SpotTheDifference
 
         private void EndGame(bool won)
         {
+
+            ClearPictureBoxes();
+
             gameTimer.Stop();
             pictureBox1.Enabled = false;
             pictureBox2.Enabled = false;
@@ -321,7 +342,12 @@ namespace SpotTheDifference
                 MessageBox.Show("Game over! Try again.", "Game Over", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
 
+            // Re-enable the start button
             btnStartGame.Enabled = true;
+
+            // Clear any drawings on the picture boxes
+            pictureBox1.Invalidate();
+            pictureBox2.Invalidate();
         }
 
         private void timeModeToolStripMenuItem_Click(object sender, EventArgs e)
