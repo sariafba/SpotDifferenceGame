@@ -9,7 +9,6 @@ using SpotDifferenceGame.Properties;
 
 namespace SpotTheDifference
 {
-    // Add this before your Form2 class
     public class DifferenceCluster
     {
         public Point Center { get; set; }
@@ -47,6 +46,12 @@ namespace SpotTheDifference
             // Set default mode and difficulty
             currentMode = GameMode.TimeLimit;
             currentDifficulty = DifficultyLevel.Easy;
+            // Set initial values based on default difficulty
+            SetDifficultyValues(currentDifficulty);
+
+            // Update UI based on default mode
+            UpdateModeUI();
+
 
             // Initialize UI
             UpdateAttemptsDisplay();
@@ -56,6 +61,30 @@ namespace SpotTheDifference
             // Ensure picture boxes are initially disabled
             pictureBox1.Enabled = false;
             pictureBox2.Enabled = false;
+        }
+
+        private void SetDifficultyValues(DifficultyLevel difficulty)
+        {
+            switch (difficulty)
+            {
+                case DifficultyLevel.Easy:
+                    maxAttempts = 10;
+                    timeLeft = 60;
+                    break;
+                case DifficultyLevel.Medium:
+                    maxAttempts = 7;
+                    timeLeft = 45;
+                    break;
+                case DifficultyLevel.Hard:
+                    maxAttempts = 5;
+                    timeLeft = 30;
+                    break;
+            }
+            attemptsLeft = maxAttempts; // Reset attempts
+
+            // Update UI displays
+            UpdateAttemptsDisplay();
+            UpdateTimerDisplay();
         }
 
         private void ClearPictureBoxes()
@@ -121,6 +150,22 @@ namespace SpotTheDifference
             foundDifferences.Clear();
         }
 
+        private List<Point> SimplifyDifferences(List<Point> rawDiffs)
+        {
+            List<Point> finalDiffs = new List<Point>();
+            Random rand = new Random();
+
+            // Keep only 5-10 differences
+            int maxDiffs = 5 + (int)currentDifficulty; // Easy=5, Medium=7, Hard=10
+            while (finalDiffs.Count < maxDiffs && rawDiffs.Count > 0)
+            {
+                int index = rand.Next(rawDiffs.Count);
+                finalDiffs.Add(rawDiffs[index]);
+                rawDiffs.RemoveAt(index);
+            }
+            return finalDiffs;
+        }
+
         private List<Point> FindActualDifferences(Bitmap img1, Bitmap img2)
         {
             List<Point> allDiffs = new List<Point>();
@@ -172,6 +217,7 @@ namespace SpotTheDifference
         {
             return Math.Sqrt(Math.Pow(p1.X - p2.X, 2) + Math.Pow(p1.Y - p2.Y, 2));
         }
+
         private int ColorDiff(Color c1, Color c2)
         {
             return Math.Abs(c1.R - c2.R) +
@@ -179,37 +225,19 @@ namespace SpotTheDifference
                    Math.Abs(c1.B - c2.B);
         }
 
-        private List<Point> SimplifyDifferences(List<Point> rawDiffs)
-        {
-            List<Point> finalDiffs = new List<Point>();
-            Random rand = new Random();
-
-            // Keep only 5-10 differences
-            int maxDiffs = 5 + (int)currentDifficulty; // Easy=5, Medium=7, Hard=10
-            while (finalDiffs.Count < maxDiffs && rawDiffs.Count > 0)
-            {
-                int index = rand.Next(rawDiffs.Count);
-                finalDiffs.Add(rawDiffs[index]);
-                rawDiffs.RemoveAt(index);
-            }
-            return finalDiffs;
-        }
-
         private void btnStartGame_Click(object sender, EventArgs e)
         {
-
             ClearPictureBoxes();
 
-
-            // Reset game state
+            // Reset game state with current difficulty settings
+            SetDifficultyValues(currentDifficulty);
             foundDifferences.Clear();
-            attemptsLeft = maxAttempts;
-            timeLeft = 60; // Reset time
 
             // Update UI
             UpdateFoundDifferencesDisplay();
-            UpdateAttemptsDisplay();
-            UpdateTimerDisplay();
+
+            // Ensure UI matches current mode
+            UpdateModeUI();
 
             // Start game based on mode
             if (currentMode == GameMode.TimeLimit)
@@ -222,12 +250,9 @@ namespace SpotTheDifference
             pictureBox2.Enabled = true;
 
             btnStartGame.Enabled = false;
-
-            // Clear any previous drawings
             pictureBox1.Invalidate();
             pictureBox2.Invalidate();
         }
-
         private void pictureBox1_MouseClick(object sender, MouseEventArgs e)
         {
             HandleClick(e.Location, pictureBox1);
@@ -305,12 +330,26 @@ namespace SpotTheDifference
 
         private void UpdateAttemptsDisplay()
         {
-            lblAttempts.Text = $"Attempts left: {attemptsLeft}";
+            if (currentMode == GameMode.AttemptLimit)
+            {
+                lblAttempts.Text = $"Attempts left: {attemptsLeft}";
+            }
+            else
+            {
+                lblAttempts.Text = $"Total attempts: {maxAttempts}";
+            }
         }
 
         private void UpdateTimerDisplay()
         {
-            lblTime.Text = $"Time left: {timeLeft}s";
+            if (currentMode == GameMode.TimeLimit)
+            {
+                lblTime.Text = $"Time left: {timeLeft}s";
+            }
+            else
+            {
+                lblTime.Text = $"Time per attempt: {timeLeft}s";
+            }
         }
 
         private void GameTimer_Tick(object sender, EventArgs e)
@@ -355,6 +394,7 @@ namespace SpotTheDifference
             currentMode = GameMode.TimeLimit;
             timeModeToolStripMenuItem.Checked = true;
             attemptsModeToolStripMenuItem.Checked = false;
+            UpdateModeUI(); // Add this line
         }
 
         private void attemptsModeToolStripMenuItem_Click(object sender, EventArgs e)
@@ -362,23 +402,40 @@ namespace SpotTheDifference
             currentMode = GameMode.AttemptLimit;
             timeModeToolStripMenuItem.Checked = false;
             attemptsModeToolStripMenuItem.Checked = true;
+            UpdateModeUI(); // Add this line
+        }
+
+        private void UpdateModeUI()
+        {
+            // Show/Hide attempts label based on mode
+            lblAttempts.Visible = (currentMode == GameMode.AttemptLimit);
+
+            // Show/Hide time label based on mode (if you want this too)
+            lblTime.Visible = (currentMode == GameMode.TimeLimit);
+
+            // Update displays to reflect current values
+            UpdateAttemptsDisplay();
+            UpdateTimerDisplay();
         }
 
         private void easyToolStripMenuItem_Click(object sender, EventArgs e)
         {
             currentDifficulty = DifficultyLevel.Easy;
+            SetDifficultyValues(currentDifficulty);
             UpdateDifficultyMenu();
         }
 
         private void mediumToolStripMenuItem_Click(object sender, EventArgs e)
         {
             currentDifficulty = DifficultyLevel.Medium;
+            SetDifficultyValues(currentDifficulty);
             UpdateDifficultyMenu();
         }
 
         private void hardToolStripMenuItem_Click(object sender, EventArgs e)
         {
             currentDifficulty = DifficultyLevel.Hard;
+            SetDifficultyValues(currentDifficulty);
             UpdateDifficultyMenu();
         }
 
